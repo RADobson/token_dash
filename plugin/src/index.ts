@@ -5,7 +5,30 @@
  * Integrates with OpenClaw's Mission Control for unified visibility.
  */
 
-import type { PluginApi } from 'openclaw';
+// Plugin API types (from OpenClaw runtime)
+interface PluginApi {
+  config: any;
+  logger: {
+    info: (...args: any[]) => void;
+    warn: (...args: any[]) => void;
+    error: (...args: any[]) => void;
+  };
+  registerCommand: (opts: {
+    name: string;
+    description: string;
+    handler: (ctx?: any) => Promise<{ text: string }> | { text: string };
+  }) => void;
+  registerGatewayMethod: (name: string, handler: (ctx: { respond: (ok: boolean, data: any) => void }) => void | Promise<void>) => void;
+  registerCli: (fn: (opts: { program: any }) => void, meta: { commands: string[] }) => void;
+  registerService: (opts: { id: string; start: () => void; stop: () => void }) => void;
+  registerTool: (opts: {
+    name: string;
+    description: string;
+    parameters: any;
+    handler: (args: any) => Promise<any> | any;
+  }) => void;
+}
+
 import {
   OpenAICollector,
   AnthropicCollector,
@@ -47,11 +70,26 @@ function getCollectorConfig(api: PluginApi, providerId: string): CollectorConfig
     openrouter: 'OPENROUTER_API_KEY',
   };
   
+  // Try multiple sources for API key:
+  // 1. Direct provider config (models.providers.<id>.apiKey)
+  // 2. Environment block in config (env.VAR_NAME)
+  // 3. Process environment variable
+  const providerConfig = config.models?.providers?.[providerId];
   const envVar = envVarMap[providerId];
-  const apiKey = envVar ? (config.env?.[envVar] || process.env[envVar]) : undefined;
+  
+  let apiKey = providerConfig?.apiKey;
+  if (!apiKey && envVar) {
+    apiKey = config.env?.[envVar] || process.env[envVar];
+  }
+  
+  // Resolve ${VAR} references in API key
+  if (apiKey && apiKey.startsWith('${') && apiKey.endsWith('}')) {
+    const varName = apiKey.slice(2, -1);
+    apiKey = config.env?.[varName] || process.env[varName];
+  }
   
   // Get base URL from provider config if available
-  const baseUrl = config.models?.providers?.[providerId]?.baseUrl;
+  const baseUrl = providerConfig?.baseUrl;
   
   return {
     apiKey,
