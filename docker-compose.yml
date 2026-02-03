@@ -52,6 +52,8 @@ services:
       - ./collectors:/app/collectors
       - ./config:/app/config
       - collector_cache:/app/cache
+      # Mount Claude Code stats directory for usage tracking
+      - ~/.claude:/root/.claude:ro
     environment:
       - INFLUXDB_URL=http://influxdb:8086
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-tokendash-super-secret-token}
