@@ -1,0 +1,7 @@
+influxdb-client>=1.38.0
+httpx>=0.25.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dateutil>=2.8.2
+schedule>=1.2.0
+structlog>=23.2.0
