@@ -1,172 +1,155 @@
-# Token Dashboard 🎯
+# Token Dashboard
 
-**Track all your AI API token usage in one beautiful Grafana dashboard.**
+Real-time AI API token usage and balance tracking across all providers — integrated directly into OpenClaw's Mission Control.
 
-![Status](https://img.shields.io/badge/status-beta-yellow)
-![License](https://img.shields.io/badge/license-MIT-blue)
+## Why This Exists
 
-## Features
+Bot owners currently need to log into 5+ different provider consoles to check balances and usage. This plugin brings all that data into one place within OpenClaw:
 
-- 📊 **Unified Dashboard** - All your AI spending in one place
-- 🤖 **Multi-Provider Support**
-  - OpenAI API (GPT-4, GPT-3.5, embeddings, etc.)
-  - Anthropic API (Claude models)
-  - Claude Max subscription usage
-  - ChatGPT Plus subscription usage
-  - OpenClaw session statistics
-- 💰 **Cost Tracking** - Real-time cost estimates with configurable pricing
-- 📈 **Historical Trends** - Daily, weekly, monthly usage patterns
-- 🔔 **Alerting** - Get notified when approaching limits
-- 🐳 **Docker-Ready** - One command deployment
+- 💰 **See all balances at a glance** — no more console hopping
+- 📊 **Track burn rate** — know how fast you're spending
+- ⚠️ **Low balance alerts** — get notified before you run out
+- 📈 **Usage history** — understand your patterns over time
 
-## Quick Start
+## Supported Providers
 
-### Prerequisites
-- Docker & Docker Compose
-- API keys for OpenAI and/or Anthropic (optional - for API tracking)
-- Claude Code and/or Codex CLI (optional - for subscription tracking)
+| Provider | Balance | Usage | Status |
+|----------|---------|-------|--------|
+| OpenAI | ✅ | ✅ | Tested |
+| Anthropic | ✅ | ✅ | Tested |
+| Moonshot (Kimi) | 🔄 | 🔄 | In Progress |
+| OpenRouter | ✅ | ✅ | Tested |
 
-### 1. Clone & Configure
+## Installation
+
+### From npm (recommended)
 
 ```bash
-git clone https://github.com/RADobson/token_dash.git
-cd token_dash
-cp .env.example .env
-# Edit .env with your API keys
+openclaw plugins install @dobsondev/token-dashboard
 ```
 
-### 2. Start Services
+### From source
 
 ```bash
-docker-compose up -d
+# Clone this repo
+git clone https://github.com/RADobson/token_dash
+cd token_dash/plugin
+
+# Install and build
+npm install
+npm run build
+
+# Install into OpenClaw
+openclaw plugins install -l .
 ```
 
-### 3. Access Dashboard
+## Usage
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-- **Username:** admin
-- **Password:** admin (change on first login)
+### Chat Commands
+
+```
+/tokens        # Show current usage and balances
+/burn          # Quick burn rate summary
+```
+
+### CLI Commands
+
+```bash
+openclaw tokens status     # Show current usage
+openclaw tokens providers  # List configured providers
+```
+
+### Agent Tool
+
+The `token_usage` tool is available to your AI agent:
+
+```
+"Check my OpenAI balance"
+→ Uses token_usage tool to fetch and display balance
+```
 
 ## Configuration
 
-### Environment Variables
+Add to your OpenClaw config:
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | OpenAI API key for usage tracking | No |
-| `ANTHROPIC_API_KEY` | Anthropic API key for usage tracking | No |
-| `INFLUXDB_TOKEN` | InfluxDB authentication token | Auto-generated |
-| `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | No (default: admin) |
-| `COLLECT_INTERVAL` | Data collection interval in seconds | No (default: 300) |
-
-### Data Sources
-
-#### 1. OpenAI API Usage
-Tracks usage via OpenAI's billing/usage API endpoint.
-
-#### 2. Anthropic API Usage  
-Tracks usage via Anthropic's usage API endpoint.
-
-#### 3. Claude Code Subscription (Claude Max)
-Parses output from `claude usage` command to track subscription usage against limits.
-
-#### 4. Codex CLI (ChatGPT Plus)
-Parses output from `codex usage` command to track subscription usage.
-
-#### 5. OpenClaw Sessions
-Tracks token usage from OpenClaw agent sessions via the Gateway API.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Token Dashboard                      │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌──────────────┐   ┌──────────────┐   ┌─────────────┐ │
-│  │  Collectors  │──▶│   InfluxDB   │──▶│   Grafana   │ │
-│  │   (Python)   │   │ (Time-series)│   │ (Dashboard) │ │
-│  └──────────────┘   └──────────────┘   └─────────────┘ │
-│         │                                               │
-│         ├── openai_collector.py                        │
-│         ├── anthropic_collector.py                     │
-│         ├── claude_code_collector.py                   │
-│         ├── codex_collector.py                         │
-│         └── openclaw_collector.py                      │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
+```json5
+{
+  "plugins": {
+    "entries": {
+      "token-dashboard": {
+        "enabled": true,
+        "config": {
+          "pollIntervalMinutes": 15,
+          "historyRetentionDays": 90,
+          "alertThresholds": {
+            "openai": { "balanceUsd": 10 },
+            "anthropic": { "balanceUsd": 5 },
+            "moonshot": { "balanceUsd": 5 }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-## Dashboard Panels
+### Configuration Options
 
-### Overview
-- Total tokens used (all providers)
-- Estimated total cost
-- Active API keys
-- Collection status
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pollIntervalMinutes` | number | 15 | How often to refresh usage data |
+| `historyRetentionDays` | number | 90 | How long to keep historical data |
+| `alertThresholds.<provider>.balanceUsd` | number | - | Alert when balance drops below this |
+| `enabledProviders` | string[] | all | Which providers to track |
 
-### By Provider
-- OpenAI usage breakdown by model
-- Anthropic usage breakdown by model
-- Subscription usage vs limits
+## API Keys
 
-### Trends
-- Daily/weekly/monthly usage charts
-- Cost trends over time
-- Projection to end of billing cycle
+The plugin uses API keys from your existing OpenClaw config:
 
-### Alerts
-- Approaching rate limits
-- Unusual usage spikes
-- API errors
+- `OPENAI_API_KEY` — OpenAI
+- `ANTHROPIC_API_KEY` — Anthropic
+- `MOONSHOT_API_KEY` — Moonshot/Kimi
+- `OPENROUTER_API_KEY` — OpenRouter
 
-## Development
+No additional configuration needed if you already have these set up.
 
-### Local Development
+## RPC Methods
 
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate
+For programmatic access:
 
-# Install dependencies
-pip install -r requirements.txt
+```typescript
+// Get current status
+const status = await gateway.call('token-dashboard.status');
 
-# Run collectors manually
-python collectors/openai_collector.py
+// Get cached data (faster, may be stale)
+const cached = await gateway.call('token-dashboard.cached');
+
+// List providers
+const providers = await gateway.call('token-dashboard.providers');
 ```
-
-### Adding New Providers
-
-1. Create a new collector in `collectors/`
-2. Implement the `Collector` base class
-3. Add to `docker-compose.yml`
-4. Create Grafana dashboard panel
 
 ## Roadmap
 
-- [x] Project structure
-- [x] Docker Compose setup
-- [x] InfluxDB integration
-- [x] Grafana provisioning
-- [ ] OpenAI collector
-- [ ] Anthropic collector
-- [ ] Claude Code subscription collector
-- [ ] Codex subscription collector
-- [ ] OpenClaw collector
-- [ ] Pre-built dashboards
-- [ ] Alert rules
-- [ ] Cost estimation
-- [ ] Multi-organization support
+- [x] OpenAI collector
+- [x] Anthropic collector
+- [x] OpenRouter collector
+- [ ] Moonshot/Kimi collector (needs API research)
+- [ ] Google AI/Vertex collector
+- [ ] Web UI dashboard in Mission Control
+- [ ] Historical charts
+- [ ] Burn rate forecasting
+- [ ] Budget caps
+
+## Legacy: Standalone Dashboard
+
+The original `collectors/` and `docker-compose.yml` provide a standalone Grafana dashboard (InfluxDB + Python collectors). This is still useful if you want:
+
+- Self-hosted time-series storage
+- Custom Grafana dashboards
+- Historical data beyond 90 days
+
+See `collectors/README.md` for the standalone setup.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
----
-
-Built with ❤️ by [Dobson Development](https://dobsondevelopment.com.au)
+MIT — Dobson Development

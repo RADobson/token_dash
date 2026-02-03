@@ -1,0 +1,66 @@
+{
+  "id": "token-dashboard",
+  "name": "Token Dashboard",
+  "version": "0.1.0",
+  "description": "Real-time AI API token usage and balance tracking across all providers",
+  "entry": "./dist/index.js",
+  "author": "Dobson Development",
+  "repository": "https://github.com/RADobson/token_dash",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "pollIntervalMinutes": {
+        "type": "number",
+        "default": 15,
+        "minimum": 1,
+        "maximum": 1440
+      },
+      "historyRetentionDays": {
+        "type": "number",
+        "default": 90,
+        "minimum": 1,
+        "maximum": 365
+      },
+      "alertThresholds": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "balanceUsd": { "type": "number", "minimum": 0 },
+            "dailySpendUsd": { "type": "number", "minimum": 0 }
+          }
+        }
+      },
+      "enabledProviders": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["openai", "anthropic", "moonshot", "openrouter", "google", "openclaw"]
+        },
+        "default": ["openai", "anthropic", "moonshot", "openrouter", "openclaw"]
+      }
+    }
+  },
+  "uiHints": {
+    "pollIntervalMinutes": {
+      "label": "Poll Interval (minutes)",
+      "placeholder": "15"
+    },
+    "historyRetentionDays": {
+      "label": "History Retention (days)",
+      "placeholder": "90"
+    },
+    "alertThresholds": {
+      "label": "Alert Thresholds",
+      "description": "Set balance thresholds for low-balance alerts per provider"
+    },
+    "enabledProviders": {
+      "label": "Enabled Providers",
+      "description": "Which providers to track usage for"
+    }
+  },
+  "commands": ["tokens"],
+  "tools": ["token_usage"],
+  "services": ["token-dashboard-poller"]
+}

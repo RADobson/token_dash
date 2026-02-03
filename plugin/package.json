@@ -1,0 +1,44 @@
+{
+  "name": "@dobsondev/token-dashboard",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin for real-time AI API token usage and balance tracking",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "token-tracking",
+    "ai-usage",
+    "openai",
+    "anthropic",
+    "moonshot",
+    "kimi"
+  ],
+  "author": "Dobson Development",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RADobson/token_dash"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  }
+}
